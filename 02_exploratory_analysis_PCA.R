@@ -49,3 +49,6 @@ ggsave("plots/PCA_plot.png", width = 6, height = 5, dpi = 300)
 
 #Statistical test: whether PC1 differs between tumor and normal samples
 t.test(PC1 ~ Group, data = pca_df)
+
+#Loading processing
+
