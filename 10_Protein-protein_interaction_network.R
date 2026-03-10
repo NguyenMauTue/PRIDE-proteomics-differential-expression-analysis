@@ -20,3 +20,63 @@ gene_symbols =
 # The downloaded network file is saved as:
 
 # ../data/string_network.tsv
+
+
+############################################################
+# Extract STRING PPI network
+############################################################
+
+ppi = read.delim("string_interactions.tsv")
+
+ppi_high = ppi[ppi$combined_score > 0.7, ]
+
+library(igraph)
+
+g = graph_from_data_frame(
+  ppi_high[,c("X.node1","node2")],
+  directed = FALSE
+)
+
+
+############################################################
+# Network size
+############################################################
+
+vcount(g)   # number of proteins
+ecount(g)   # number of interactions
+
+
+############################################################
+# Connected components
+############################################################
+
+comp <- components(g)
+
+comp$csize
+
+
+############################################################
+# Network centrality
+############################################################
+
+deg = degree(g)
+
+bet = betweenness(g)
+
+
+############################################################
+# Network summary table
+############################################################
+
+network_summary = data.frame(
+  Symbol = names(deg),
+  degree = deg,
+  betweenness = bet
+)
+############################################################
+# Save results
+############################################################
+
+write.csv(network_summary,
+          "../results/network_summary.csv",
+          row.names = FALSE)
