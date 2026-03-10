@@ -28,8 +28,14 @@ pca_df = as.data.frame(pca$x)
 
 pca_df$Group = metadata$Group
 
-ggplot(pca_df, aes(PC1, PC2, color = Group)) +
+percent_var <- round(100 * (quality_testing_pca$sdev^2 / sum(quality_testing_pca$sdev^2)), 1)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Group)) +
   geom_point(size = 4) +
-  theme_minimal()
+  theme_minimal() +
+  geom_text_repel(aes(label = rownames(quality_testing_pca_x)), size = 3) +
+  labs(title = "PCA quality testing",
+       x = paste0("PC1 (explains ", percent_var[1], "% of variance)"),
+       y = paste0("PC2 (explains ", percent_var[2], "% of variance)"))
 
 ggsave("../results/pca_quality_control.png")
