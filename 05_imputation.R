@@ -5,7 +5,7 @@
 library(ggplot2)
 library(ggrepel)
 
-filtered_matrix = readRDS("../data/filtered_matrix.rds")
+log_lfq_matrix = readRDS("../data/log_lfq_matrix.rds")
 metadata = read.csv("../data/sample_metadata.csv")
 
 
@@ -13,8 +13,8 @@ metadata = read.csv("../data/sample_metadata.csv")
 # Split matrix by group
 ############################################################
 
-nor = filtered_matrix[,1:3]
-tum = filtered_matrix[,4:6]
+nor = log_lfq_matrix[,1:3]
+tum = log_lfq_matrix[,4:6]
 
 
 ############################################################
@@ -60,11 +60,11 @@ saveRDS(imputed_matrix,
 png("../results/imputation_distribution_check.png",
     width = 1200, height = 900)
 
-hist(as.vector(filtered_matrix),
+hist(as.vector(log_lfq_matrix),
      breaks = 50,
      col = rgb(0,0,1,0.5),
      xlim = range(c(as.vector(imputed_matrix),
-                    as.vector(filtered_matrix)),
+                    as.vector(log_lfq_matrix)),
                   na.rm = TRUE),
      main = "Distribution of original vs imputed values",
      xlab = "Log2 LFQ intensity")
@@ -86,10 +86,10 @@ dev.off()
 # PCA stability test
 ############################################################
 
-complete_inx = rowSums(is.na(filtered_matrix)) == 0
+complete_inx = rowSums(is.na(log_lfq_matrix)) == 0
 
 pca_before = prcomp(
-  t(filtered_matrix[complete_inx,]),
+  t(log_lfq_matrix[complete_inx,]),
   scale = TRUE
 )
 
