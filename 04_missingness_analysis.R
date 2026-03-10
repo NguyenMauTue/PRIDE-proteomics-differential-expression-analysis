@@ -2,87 +2,37 @@
 # 04 Missingness mechanism analysis
 ############################################################
 
-library(tidyverse)
+library(ggplot2)
 
 log_lfq_matrix = readRDS("../data/log_lfq_matrix.rds")
 metadata = read.csv("../data/sample_metadata.csv")
 
 ############################################################
-# 1 Convert matrix to long format
+# Detection matrix
 ############################################################
 
-lfq_long =
-  as.data.frame(log_lfq_matrix) %>%
-  rownames_to_column("Protein") %>%
-  pivot_longer(
-    -Protein,
-    names_to = "Sample",
-    values_to = "Intensity"
-  )
-
-lfq_long =
-  lfq_long %>%
-  left_join(metadata, by = c("Sample" = "Sample"))
+detection_matrix =
+  ifelse(is.na(log_lfq_matrix), 0, 1)
 
 ############################################################
-# 2 Detection variable
+# Missingness per protein
 ############################################################
 
-lfq_long$Detected =
-  ifelse(is.na(lfq_long$Intensity), 0, 1)
+protein_missing =
+  rowSums(is.na(log_lfq_matrix))
 
-############################################################
-# 3 Detection probability vs intensity
-############################################################
+protein_detected =
+  rowSums(!is.na(log_lfq_matrix))
 
-det_plot =
-  ggplot(lfq_long,
-         aes(x = Intensity, y = Detected)) +
-  geom_jitter(height = 0.05, alpha = 0.2) +
-  geom_smooth(method = "glm",
-              method.args = list(family = "binomial"),
-              color = "red") +
-  theme_minimal() +
-  labs(
-    title = "Detection probability vs intensity",
-    x = "log2 LFQ intensity",
-    y = "Detection probability"
-  )
-
-ggsave(
-  "../results/detection_probability_curve.png",
-  det_plot,
-  width = 6,
-  height = 5
-)
-
-############################################################
-# 4 Logistic regression model
-############################################################
-
-det_model =
-  glm(
-    Detected ~ Intensity,
-    data = lfq_long,
-    family = binomial
-  )
-
-capture.output(
-  summary(det_model),
-  file = "../results/missingness_logistic_model.txt"
-)
-
-############################################################
-# 5 Missingness per protein
-############################################################
+missing_fraction =
+  protein_missing / ncol(log_lfq_matrix)
 
 missing_summary =
-  lfq_long %>%
-  group_by(Protein) %>%
-  summarise(
-    detected = sum(Detected),
-    missing = sum(Detected == 0),
-    missing_fraction = mean(Detected == 0)
+  data.frame(
+    Protein = rownames(log_lfq_matrix),
+    Detected = protein_detected,
+    Missing = protein_missing,
+    Missing_fraction = missing_fraction
   )
 
 write.csv(
@@ -92,30 +42,95 @@ write.csv(
 )
 
 ############################################################
-# 6 Detect 3v0 pattern (complete separation)
+# Detection probability vs intensity
 ############################################################
 
-presence_matrix =
-  !is.na(log_lfq_matrix)
+intensity_vector =
+  as.vector(log_lfq_matrix)
+
+detected_vector =
+  ifelse(is.na(intensity_vector), 0, 1)
+
+missing_df =
+  data.frame(
+    Intensity = intensity_vector,
+    Detected = detected_vector
+  )
+
+missing_df =
+  missing_df[!is.na(missing_df$Intensity), ]
+
+############################################################
+# Logistic regression model
+############################################################
+
+missing_model =
+  glm(
+    Detected ~ Intensity,
+    data = missing_df,
+    family = binomial
+  )
+
+capture.output(
+  summary(missing_model),
+  file = "../results/missingness_logistic_model.txt"
+)
+
+############################################################
+# Detection probability plot
+############################################################
+
+missing_plot =
+  ggplot(missing_df,
+         aes(x = Intensity, y = Detected)) +
+  geom_jitter(height = 0.05, alpha = 0.2) +
+  geom_smooth(
+    method = "glm",
+    method.args = list(family = "binomial"),
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Detection probability vs intensity",
+    x = "log2 LFQ intensity",
+    y = "Detection probability"
+  )
+
+ggsave(
+  "../results/detection_probability_curve.png",
+  missing_plot
+)
+
+############################################################
+# 3v0 pattern detection
+############################################################
 
 group_vector =
   metadata$Group
 
-protein_pattern =
+presence_matrix =
+  !is.na(log_lfq_matrix)
+
+tumor_presence =
+  rowSums(presence_matrix[, group_vector == "Tumor"])
+
+normal_presence =
+  rowSums(presence_matrix[, group_vector == "Normal"])
+
+three_vs_zero =
   data.frame(
     Protein = rownames(log_lfq_matrix),
-    Tumor_presence =
-      rowSums(presence_matrix[, group_vector == "Tumor"]),
-    Normal_presence =
-      rowSums(presence_matrix[, group_vector == "Normal"])
+    Tumor_presence = tumor_presence,
+    Normal_presence = normal_presence
   )
 
 three_vs_zero =
-  protein_pattern %>%
-  filter(
-    (Tumor_presence > 0 & Normal_presence == 0) |
-    (Tumor_presence == 0 & Normal_presence > 0)
-  )
+  three_vs_zero[
+    (three_vs_zero$Tumor_presence > 0 &
+     three_vs_zero$Normal_presence == 0) |
+    (three_vs_zero$Tumor_presence == 0 &
+     three_vs_zero$Normal_presence > 0),
+  ]
 
 write.csv(
   three_vs_zero,
@@ -124,15 +139,16 @@ write.csv(
 )
 
 ############################################################
-# 7 Summary statistics
+# Summary statistics
 ############################################################
 
 summary_stats =
   data.frame(
-    total_proteins = nrow(log_lfq_matrix),
-    proteins_with_missing =
-      sum(rowSums(is.na(log_lfq_matrix)) > 0),
-    proteins_3v0 = nrow(three_vs_zero)
+    Total_proteins = nrow(log_lfq_matrix),
+    Proteins_with_missing =
+      sum(protein_missing > 0),
+    Proteins_3v0 =
+      nrow(three_vs_zero)
   )
 
 write.csv(
