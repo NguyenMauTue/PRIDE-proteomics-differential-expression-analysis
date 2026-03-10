@@ -5,7 +5,7 @@
 library(limma)
 
 imputed_matrix = readRDS("../data/imputed_matrix.rds")
-filtered_matrix = readRDS("../data/filtered_matrix.rds")
+log_lfq_matrix = readRDS("../data/log_lfq_matrix.rds")
 
 
 ############################################################
@@ -88,10 +88,10 @@ dev.off()
 ############################################################
 
 complete_inx =
-  rowSums(is.na(filtered_matrix)) == 0
+  rowSums(is.na(log_lfq_matrix)) == 0
 
 fit_cc =
-  lmFit(filtered_matrix[complete_inx,], design)
+  lmFit(log_lfq_matrix[complete_inx,], design)
 
 fit_cc =
   contrasts.fit(fit_cc, contrast_matrix)
