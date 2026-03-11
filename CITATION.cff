@@ -1,1 +1,21 @@
+cff-version: 1.2.0
+title: "Breast Cancer Exosome Biomarker Discovery"
+message: "If you use this repository, please cite it as below."
+type: software
 
+authors:
+  - family-names: Nguyen
+    given-names: Mau Tue
+
+repository-code: "https://github.com/NguyenMauTue/PRIDE-breast-cancer-exosome-biomarker-discovery"
+
+keywords:
+  - proteomics
+  - exosome
+  - breast cancer
+  - biomarker discovery
+  - bioinformatics
+
+license: MIT
+version: 1.0.0
+date-released: 3/11/2026
