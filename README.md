@@ -10,7 +10,7 @@ Extracellular vesicles (exosomes) play important roles in cancer biology, mediat
 
 Proteins packaged into tumor-derived exosomes may serve as **non-invasive biomarkers detectable through liquid biopsy**.
 
-This project investigates whether **exosomal proteomic profiles can distinguish breast cancer–associated samples from normal controls**, and prioritizes candidate proteins potentially involved in tumor-related vesicle biology.
+This project investigates whether **exosomal proteomic profiles can distinguish breast cancer–associated samples from normal controls**, and prioritizes candidate proteins potentially involved in tumor-related vesicle biology. 
 
 ---
 
@@ -21,8 +21,10 @@ Proteomics data were obtained from the PRIDE Archive.
 Dataset ID
 PXD056161
 
-Study
-Metabolomic and Proteomic Analysis of Breast Cancer Exosomes Reveals Alterations in Purine and Carnitine Metabolism
+Original study:
+
+Metabolomic and Proteomic Analysis of Breast Cancer Exosomes Reveals Alterations in Purine and Carnitine Metabolism  
+DOI: 10.1021/acs.jproteome.4c00795
 
 Experimental system
 
