@@ -1,158 +1,143 @@
 ############################################################
-# 04 Missingness mechanism analysis
+# Missingness analysis
 ############################################################
 
+library(reshape2)
 library(ggplot2)
 
-log_lfq_matrix = readRDS("../data/log_lfq_matrix.rds")
-metadata = read.csv("../data/sample_metadata.csv")
-
 ############################################################
-# Detection matrix
+# Load input data
 ############################################################
 
-detection_matrix =
-  ifelse(is.na(log_lfq_matrix), 0, 1)
+# Load LFQ intensity matrix (log transformed)
+log_lfq_matrix <- readRDS("../data/log_lfq_matrix.rds")
+
+# Load filtered protein matrix
+collapsed_matrix <- readRDS("../data/collapsed_matrix.rds")
+
+library(reshape2)
+library(ggplot2)
 
 ############################################################
-# Missingness per protein
+# Filtering proteins
 ############################################################
 
-protein_missing =
-  rowSums(is.na(log_lfq_matrix))
+# Identify sample columns for each condition
+nor_col = grep("^Normal", colnames(collapsed_matrix))
+tum_col = grep("^Tumor", colnames(collapsed_matrix))
 
-protein_detected =
-  rowSums(!is.na(log_lfq_matrix))
+# Retain proteins detected in at least two samples
+# within either biological condition
+filtered_matrix = collapsed_matrix[
+  rowSums(!is.na(collapsed_matrix[, nor_col])) >= 2 |
+  rowSums(!is.na(collapsed_matrix[, tum_col])) >= 2, ]
 
-missing_fraction =
-  protein_missing / ncol(log_lfq_matrix)
+############################################################
+# Evaluate missingness mechanism
+############################################################
 
-missing_summary =
-  data.frame(
-    Protein = rownames(log_lfq_matrix),
-    Detected = protein_detected,
-    Missing = protein_missing,
-    Missing_fraction = missing_fraction
-  )
+# Convert LFQ matrix to long format
+long_df <- melt(log_lfq_matrix)
+colnames(long_df) <- c("Protein", "Sample", "Intensity")
 
-write.csv(
-  missing_summary,
-  "../results/protein_missingness_summary.csv",
-  row.names = FALSE
+# Detection status
+long_df$Detected <- !is.na(long_df$Intensity)
+
+# Mean abundance per protein
+protein_mean <- rowMeans(log_lfq_matrix, na.rm = TRUE)
+long_df$MeanIntensity <- protein_mean[long_df$Protein]
+
+############################################################
+# Logistic regression: detection probability vs abundance
+############################################################
+
+fit_det <- glm(
+  Detected ~ MeanIntensity,
+  data = long_df,
+  family = binomial
 )
 
-############################################################
-# Detection probability vs intensity
-############################################################
-
-intensity_vector =
-  as.vector(log_lfq_matrix)
-
-detected_vector =
-  ifelse(is.na(intensity_vector), 0, 1)
-
-missing_df =
-  data.frame(
-    Intensity = intensity_vector,
-    Detected = detected_vector
-  )
-
-missing_df =
-  missing_df[!is.na(missing_df$Intensity), ]
+summary(fit_det)
 
 ############################################################
-# Logistic regression model
+# Visualization of detection bias
 ############################################################
 
-missing_model =
-  glm(
-    Detected ~ Intensity,
-    data = missing_df,
-    family = binomial
-  )
+# Convert logical detection to numeric
+long_df$Detected_Number = 0
+long_df$Detected_Number[long_df$Detected == TRUE] = 1
 
-capture.output(
-  summary(missing_model),
-  file = "../results/missingness_logistic_model.txt"
+ggplot(long_df, aes(x = MeanIntensity, y = Detected_Number)) +
+  geom_jitter(height = 0.05, width = 0.1, alpha = 0.1) +
+  stat_smooth(method = "glm",
+              method.args = list(family = "binomial"),
+              se = FALSE,
+              color = "red",
+              size = 1.2) +
+  theme_minimal()
+
+# Interpretation example:
+# Logistic regression analysis demonstrated a strong positive
+# association between protein abundance and detection
+# probability (β = 0.43, p < 2e-16), indicating abundance-
+# dependent missingness consistent with a limit-of-detection
+# mechanism.
+
+############################################################
+# Quantification of extreme missingness patterns (3v0)
+############################################################
+
+normal_count = rowSums(!is.na(filtered_matrix[, nor_col]))
+tumor_count  = rowSums(!is.na(filtered_matrix[, tum_col]))
+
+n3v0_tumor   = sum(tumor_count == 3 & normal_count == 0)
+n3v0_normal  = sum(tumor_count == 0 & normal_count == 3)
+
+n3v0_count   = n3v0_tumor + n3v0_normal
+n_protein    = nrow(filtered_matrix)
+
+prop_3v0 = n3v0_count / n_protein * 100
+prop_3v0
+
+# Approximately 17.7% of proteins exhibited complete 3v0
+# missingness patterns. Given the previously demonstrated
+# abundance-dependent detection mechanism, these cases
+# likely reflect censoring effects rather than true
+# biological absence.
+
+############################################################
+# Missingness pattern classification
+############################################################
+
+pattern_df = data.frame(
+  row.names = rownames(filtered_matrix),
+  Normal_count = normal_count,
+  Tumor_count  = tumor_count
 )
 
+pattern_df$Pattern = "Other"
+
+pattern_df$Pattern[normal_count == 3 & tumor_count == 0] =
+  "Normal_only_3v0"
+
+pattern_df$Pattern[tumor_count == 3 & normal_count == 0] =
+  "Tumor_only_3v0"
+
 ############################################################
-# Detection probability plot
+# Export results
 ############################################################
 
-missing_plot =
-  ggplot(missing_df,
-         aes(x = Intensity, y = Detected)) +
-  geom_jitter(height = 0.05, alpha = 0.2) +
-  geom_smooth(
-    method = "glm",
-    method.args = list(family = "binomial"),
-    color = "red"
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Detection probability vs intensity",
-    x = "log2 LFQ intensity",
-    y = "Detection probability"
-  )
-
-ggsave(
-  "../results/detection_probability_curve.png",
-  missing_plot
+exclusive_df = subset(
+  pattern_df,
+  pattern_df$Pattern == "Normal_only_3v0" |
+  pattern_df$Pattern == "Tumor_only_3v0"
 )
 
-############################################################
-# 3v0 pattern detection
-############################################################
+write.csv(pattern_df,
+          "missing_pattern_summary.csv",
+          row.names = TRUE)
 
-group_vector =
-  metadata$Group
-
-presence_matrix =
-  !is.na(log_lfq_matrix)
-
-tumor_presence =
-  rowSums(presence_matrix[, group_vector == "Tumor"])
-
-normal_presence =
-  rowSums(presence_matrix[, group_vector == "Normal"])
-
-three_vs_zero =
-  data.frame(
-    Protein = rownames(log_lfq_matrix),
-    Tumor_presence = tumor_presence,
-    Normal_presence = normal_presence
-  )
-
-three_vs_zero =
-  three_vs_zero[
-    (three_vs_zero$Tumor_presence > 0 &
-     three_vs_zero$Normal_presence == 0) |
-    (three_vs_zero$Tumor_presence == 0 &
-     three_vs_zero$Normal_presence > 0),
-  ]
-
-write.csv(
-  three_vs_zero,
-  "../results/three_vs_zero_proteins.csv",
-  row.names = FALSE
-)
-
-############################################################
-# Summary statistics
-############################################################
-
-summary_stats =
-  data.frame(
-    Total_proteins = nrow(log_lfq_matrix),
-    Proteins_with_missing =
-      sum(protein_missing > 0),
-    Proteins_3v0 =
-      nrow(three_vs_zero)
-  )
-
-write.csv(
-  summary_stats,
-  "../results/missingness_summary_stats.csv",
-  row.names = FALSE
+write.csv(exclusive_df,
+          "exclusive_3v0_proteins.csv",
+          row.names = TRUE)
 )
