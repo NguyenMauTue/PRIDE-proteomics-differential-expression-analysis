@@ -59,10 +59,6 @@ write.csv(
 # P-value distribution check
 ############################################################
 
-png("../results/pvalue_vs_fdr_distribution.png",
-    width = 1200,
-    height = 900)
-
 hist(imputed_result$P.Value,
      breaks = 50,
      col = rgb(0,0,1,0.5),
