@@ -32,29 +32,29 @@ sig_cc  = rownames(result_cc)
 ############################################################
 
 robustness_summary = list(
-
+  
   cor_t =
     cor(
       imputed_result[common_genes,"t"],
       result_cc[common_genes,"t"]
     ),
-
+  
   cor_FDR =
     cor(
       -log10(imputed_result[common_genes,"adj.P.Val"]),
       -log10(result_cc[common_genes,"adj.P.Val"])
     ),
-
+  
   n_sig_imp = length(sig_imp),
   n_sig_cc  = length(sig_cc),
-
+  
   overlap =
     length(intersect(sig_imp, sig_cc)),
-
+  
   jaccard =
     length(intersect(sig_imp, sig_cc)) /
     length(union(sig_imp, sig_cc))
-
+  
 )
 
 
@@ -73,17 +73,4 @@ write.csv(
   "../results/limma_robustness_metrics.csv",
   row.names = FALSE
 )
-
-
-############################################################
-# Save DEA tables
-############################################################
-
-write.csv(
-  result_cc,
-  "../results/complete_case_DEA.csv"
-)
-
-write.csv(
-  imputed_result,
-  "../results/imputed_DEA.csv"
+  
