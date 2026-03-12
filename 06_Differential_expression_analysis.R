@@ -5,7 +5,7 @@
 library(limma)
 
 imputed_matrix = readRDS("../data/imputed_matrix.rds")
-log_lfq_matrix = readRDS("../data/log_lfq_matrix.rds")
+collapsed_matrix = readRDS("../data/collapsed_matrix.rds")
 
 
 ############################################################
@@ -88,10 +88,10 @@ dev.off()
 ############################################################
 
 complete_inx =
-  rowSums(is.na(log_lfq_matrix)) == 0
+  rowSums(is.na(collapsed_matrix)) == 0
 
 fit_cc =
-  lmFit(log_lfq_matrix[complete_inx,], design)
+  lmFit(collapsed_matrix[complete_inx,], design)
 
 fit_cc =
   contrasts.fit(fit_cc, contrast_matrix)
