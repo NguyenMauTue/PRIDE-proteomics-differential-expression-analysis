@@ -10,7 +10,8 @@ library(ggplot2)
 ############################################################
 
 # Load LFQ intensity matrix (log transformed)
-log_lfq_matrix <- readRDS("../data/log_lfq_matrix.rds")
+log_lfq_matrix <- readRDS("data/log_lfq_matrix.rds")
+metadata <- read.csv("data/sample_metadata.csv")
 
 ############################################################
 # Collapsing
@@ -34,7 +35,7 @@ tum_col = grep("^Tumor", colnames(collapsed_matrix))
 # within either biological condition
 filtered_matrix = collapsed_matrix[
   rowSums(!is.na(collapsed_matrix[, nor_col])) >= 2 |
-  rowSums(!is.na(collapsed_matrix[, tum_col])) >= 2, ]
+    rowSums(!is.na(collapsed_matrix[, tum_col])) >= 2, ]
 
 ############################################################
 # Evaluate missingness mechanism
@@ -134,14 +135,14 @@ pattern_df$Pattern[tumor_count == 3 & normal_count == 0] =
 exclusive_df = subset(
   pattern_df,
   pattern_df$Pattern == "Normal_only_3v0" |
-  pattern_df$Pattern == "Tumor_only_3v0"
+    pattern_df$Pattern == "Tumor_only_3v0"
 )
 
 write.csv(pattern_df,
-          "missing_pattern_summary.csv",
+          "../data/missing_pattern_summary.csv",
           row.names = TRUE)
 
 write.csv(exclusive_df,
-          "exclusive_3v0_proteins.csv",
+          "../data/exclusive_3v0_proteins.csv",
           row.names = TRUE)
 )
