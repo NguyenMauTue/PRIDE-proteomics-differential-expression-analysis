@@ -8,7 +8,7 @@ library(org.Hs.eg.db)
 library(ReactomePA)
 
 imputed_result =
-  read.csv("../results/imputed_DEA.csv",
+  read.csv("../results/differential_expression_imputed.csv",
            row.names = 1)
 
 
