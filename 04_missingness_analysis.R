@@ -12,11 +12,15 @@ library(ggplot2)
 # Load LFQ intensity matrix (log transformed)
 log_lfq_matrix <- readRDS("../data/log_lfq_matrix.rds")
 
-# Load filtered protein matrix
-collapsed_matrix <- readRDS("../data/collapsed_matrix.rds")
-
-library(reshape2)
-library(ggplot2)
+############################################################
+# Collapsing
+############################################################
+unique_bio = unique(metadata$BioRep_full)
+collapsed_matrix = sapply(unique_bio, function(bio) {
+  cols = metadata$Sample[metadata$BioRep_full == bio]
+  rowMeans(log_lfq_matrix[, cols], na.rm = TRUE)
+})
+colnames(collapsed_matrix) = unique_bio
 
 ############################################################
 # Filtering proteins
