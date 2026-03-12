@@ -9,8 +9,15 @@ network_summary =
   read.csv("../results/network_summary.csv")
 
 imputed_result =
-  read.csv("../results/imputed_result.csv")
+  read.csv("../results/differential_expression_imputed.csv")
 
+#Extracting majority accession (using imputed datasets) 
+protein_ids = imputed_result$X
+library(stringr)
+uniprot_major <- str_split(protein_ids, ";") |>
+  sapply(`[`, 1) |>
+  str_trim()
+imputed_result$UNIPROT = uniprot_major
 
 mart =
   useMart("ensembl",
