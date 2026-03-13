@@ -65,8 +65,6 @@ BiomarkerCandidates_themed$Localization = case_when(
   TRUE ~ "other"
 )
 
-BiomarkerCandidates_themed = BiomarkerCandidates_themed[BiomarkerCandidates_themed$Num_Themes_Match > 0, ]
-
 #PubMed mining
 check_pubmed = function(gene){
 
