@@ -8,6 +8,8 @@ library(openxlsx)
 
 filtered_themed =
   read.csv("../results/BiomarkerCandidates_themed.csv")
+limma_network_table =
+  read.csv("../results/limma_network_table.csv")
 
 #Filter candidate
 filtered_themed =
@@ -16,6 +18,10 @@ filtered_themed =
   ]
 
 #Summary table
+filtered_themed <- merge(filtered_themed, limma_network_table[, c("UNIPROT","adj.P.Val", "logFC")], 
+                         by.x = "UNIPROT", by.y = "UNIPROT", all.x = TRUE)
+
+
 summarized_df =
   filtered_themed[
     ,
@@ -36,9 +42,9 @@ summarized_df =
 listLocal = unique(summarized_df$Localization)
 
 get_Subset_Local = function(df,loc){
-
+  
   clean_name = gsub("[^A-Za-z0-9]","_",loc)
-
+  
   assign(
     paste0(clean_name,"_df"),
     subset(df,df$Localization==loc),
