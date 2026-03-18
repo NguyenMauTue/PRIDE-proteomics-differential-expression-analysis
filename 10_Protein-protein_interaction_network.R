@@ -2,6 +2,10 @@
 # 10 Protein-protein interaction network (STRING)
 ############################################################
 
+
+library(igraph)
+
+
 # Gene symbols exported from pathway enrichment
 
 gene_symbols =
@@ -30,7 +34,7 @@ ppi = read.delim("../data/string_interactions.tsv")
 
 ppi_high = ppi[ppi$combined_score > 0.7, ]
 
-library(igraph)
+
 
 g = graph_from_data_frame(
   ppi_high[,c("X.node1","node2")],
