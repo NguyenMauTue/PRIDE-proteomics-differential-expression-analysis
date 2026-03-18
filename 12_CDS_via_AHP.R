@@ -6,6 +6,12 @@ library(dplyr)
 limmanetwork_df = read.csv("results/limma_network_table.csv")
 
 
+# NOTE: No statistical pre-filtering applied (adj.P.Val or P.Value)
+# Rationale: n=3 per condition limits statistical power; BH correction
+# yields no proteins at adj.P.Val < 0.05. Study is framed as exploratory
+# hypothesis-generating; CDS serves as multi-criteria prioritization only.
+
+
 ahp_weights <- function(M) {
   n      <- nrow(M)
   norm   <- sweep(M, 2, colSums(M), "/")  # normalize each col
