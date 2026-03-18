@@ -13,8 +13,8 @@ metadata = read.csv("../data/sample_metadata.csv")
 # Split matrix by group
 ############################################################
 
-nor = log_lfq_matrix[,1:3]
-tum = log_lfq_matrix[,4:6]
+nor = log_lfq_matrix[, metadata$Sample[metadata$Group == "Normal"]]
+tum = log_lfq_matrix[, metadata$Sample[metadata$Group == "Tumor"]]
 
 
 ############################################################
